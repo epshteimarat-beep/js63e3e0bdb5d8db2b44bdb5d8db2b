@@ -1,11 +1,282 @@
-function verifyCaptcha() {
-  const input = document.getElementById("captchaInput").value.trim();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verification Required</title>
 
-  if (input === captchaText) {
-    window.location.href = "index.html";
-  } else {
-    document.getElementById("error").style.display = "block";
-    generateCaptcha();
-    document.getElementById("captchaInput").value = "";
-  }
-}
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #687386;
+      --border: #dfe5ee;
+      --accent: #2563eb;
+      --accent-dark: #1d4ed8;
+      --danger: #dc2626;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(37,99,235,.10), transparent 30%),
+        radial-gradient(circle at 85% 90%, rgba(99,102,241,.08), transparent 30%),
+        var(--bg);
+    }
+
+    .card {
+      width: min(440px, 100%);
+      background: var(--card);
+      border: 1px solid rgba(223,229,238,.9);
+      border-radius: 20px;
+      padding: 34px;
+      box-shadow: 0 18px 55px rgba(23,32,51,.10);
+      animation: cardIn .45s ease-out;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 26px;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: #eff6ff;
+      color: var(--accent);
+      font-size: 20px;
+    }
+
+    .brand-text {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    h1 {
+      margin: 0 0 9px;
+      font-size: 27px;
+      line-height: 1.2;
+      letter-spacing: -.025em;
+    }
+
+    .intro {
+      margin: 0 0 24px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .challenge {
+      position: relative;
+      min-height: 132px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin-bottom: 18px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background:
+        linear-gradient(135deg, rgba(37,99,235,.04), rgba(99,102,241,.06)),
+        repeating-linear-gradient(
+          -20deg,
+          transparent 0,
+          transparent 9px,
+          rgba(100,116,139,.045) 10px,
+          transparent 11px
+        );
+    }
+
+    .challenge::before,
+    .challenge::after {
+      content: "";
+      position: absolute;
+      width: 140%;
+      height: 1px;
+      background: rgba(37,99,235,.14);
+      transform: rotate(-8deg);
+    }
+
+    .challenge::after {
+      transform: rotate(11deg);
+      background: rgba(100,116,139,.10);
+    }
+
+    #captcha-container {
+      position: relative;
+      z-index: 1;
+      padding: 12px 20px;
+      color: #172033;
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-shadow: 1px 1px 0 rgba(255,255,255,.8);
+      user-select: none;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    #captcha-input {
+      width: 100%;
+      height: 50px;
+      padding: 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      outline: none;
+      color: var(--text);
+      background: #fff;
+      font-size: 16px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    #captcha-input::placeholder {
+      color: #9aa4b2;
+    }
+
+    #captcha-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.10);
+    }
+
+    #captcha-submit {
+      width: 100%;
+      height: 50px;
+      margin-top: 12px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--accent);
+      color: white;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s, background .2s, box-shadow .2s;
+    }
+
+    #captcha-submit:hover {
+      background: var(--accent-dark);
+      box-shadow: 0 8px 18px rgba(37,99,235,.22);
+      transform: translateY(-1px);
+    }
+
+    #captcha-submit:active {
+      transform: translateY(0);
+    }
+
+    #captcha-message {
+      margin: 12px 0 0;
+      padding: 10px 12px;
+      border-radius: 9px;
+      color: var(--danger);
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      font-size: 13px;
+      line-height: 1.4;
+      display: none;
+    }
+
+    .footer {
+      margin-top: 20px;
+      color: #8a94a4;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 26px 20px; border-radius: 16px; }
+      h1 { font-size: 24px; }
+      #captcha-container { font-size: 29px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">✓</div>
+      <div class="brand-text">SECURITY VERIFICATION</div>
+    </div>
+
+    <h1>Verify you're human</h1>
+    <p class="intro">
+      Please enter the verification code below to continue.
+    </p>
+
+    <div class="challenge" aria-label="Verification code">
+      <div id="captcha-container">{{ code }}</div>
+    </div>
+
+    <form id="captcha-form" method="POST" action="{{ url_for('captcha') }}">
+      <label for="captcha-input">Verification code</label>
+
+      <input
+        id="captcha-input"
+        type="text"
+        placeholder="Enter the code shown above"
+        name="code"
+        autocomplete="off"
+        autocapitalize="characters"
+        spellcheck="false"
+        required
+      >
+
+      <input type="hidden" name="web" value="{{ request.args.get('web') }}">
+
+      <button id="captcha-submit" type="submit">
+        Continue
+      </button>
+    </form>
+
+    <p id="captcha-message" role="alert"></p>
+
+    <div class="footer">This verification helps protect the site from automated requests.</div>
+  </main>
+
+  <script>
+    const captchaForm = document.getElementById('captcha-form');
+    const captchaInput = document.getElementById('captcha-input');
+    const errorMessage = document.getElementById('captcha-message');
+
+    captchaForm.addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      if (captchaInput.value.trim() === "{{ code }}") {
+        captchaForm.submit();
+        return;
+      }
+
+      errorMessage.textContent =
+        'The verification code is incorrect. Please try again.';
+      errorMessage.style.display = 'block';
+
+      captchaInput.value = '';
+      captchaInput.focus();
+    });
+  </script>
+</body>
+</html>
